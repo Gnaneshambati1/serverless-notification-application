@@ -1,0 +1,50 @@
+{
+  "Comment": "Serverless notification workflow with error handling",
+  "StartAt": "SendEmail",
+  "States": {
+    "SendEmail": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:ap-south-1:292960609315:function:sendEmail",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "EmailFailed"
+        }
+      ],
+      "Next": "EmailSuccess"
+    },
+    "EmailSuccess": {
+      "Type": "Pass",
+      "Result": "Email notification sent successfully",
+      "Next": "PublishSNS"
+    },
+    "PublishSNS": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:ap-south-1:292960609315:ServerlessNotificationTopic",
+        "Message": "Serverless notification workflow completed successfully."
+      },
+      "End": true
+    },
+    "EmailFailed": {
+      "Type": "Fail",
+      "Error": "EmailNotificationFailed",
+      "Cause": "The email Lambda failed after retry attempts"
+    }
+  }
+}
