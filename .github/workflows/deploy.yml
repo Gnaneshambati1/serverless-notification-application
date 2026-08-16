@@ -5,17 +5,16 @@ on:
     branches:
       - main
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   deploy:
     name: Deploy to AWS
     runs-on: ubuntu-latest
 
-    steps:
+    permissions:
+      id-token: write
+      contents: read
 
+    steps:
       - name: Checkout source code
         uses: actions/checkout@v4
 
