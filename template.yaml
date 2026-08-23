@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless Notification Application
+
+Parameters:
+  SenderEmail:
+    Type: String
+    Description: Verified SES sender email address
+
+Resources:
+  SendEmailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: sendEmail
+      Handler: sendEmail.lambda_handler
+      Runtime: python3.12
+      CodeUri: lambda/
+      Timeout: 10
+      Environment:
+        Variables:
+          SENDER_EMAIL: !Ref SenderEmail
+      Policies:
+        - SESCrudPolicy:
+            IdentityName: !Ref SenderEmail
+
+  NotificationApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'POST,OPTIONS'"
+        AllowHeaders: "'Content-Type'"
+        AllowOrigin: "'*'"
+
+  NotifyEndpoint:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: notifyTrigger
+      Handler: sendEmail.lambda_handler
+      Runtime: python3.12
+      CodeUri: lambda/
+      Events:
+        NotifyApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref NotificationApi
+            Path: /notify
+            Method: post
+
+  NotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: ServerlessNotificationTopic
+
+Outputs:
+  ApiUrl:
+    Description: Invoke URL for the /notify endpoint
+    Value: !Sub "https://${NotificationApi}.execute-api.${AWS::Region}.amazonaws.com/prod/notify"
