@@ -6,8 +6,36 @@ on:
       - main
 
 jobs:
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r lambda/requirements-dev.txt
+          pip install flake8
+
+      - name: Lint
+        run: flake8 lambda/ --max-line-length=100
+
+      - name: Run tests
+        env:
+          SENDER_EMAIL: test@example.com
+        run: |
+          cd lambda
+          python -m pytest
+
   deploy:
     name: Deploy to AWS
+    needs: test
     runs-on: ubuntu-latest
 
     permissions:
@@ -23,9 +51,6 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActions-ServerlessNotification
           aws-region: ap-south-1
-
-      # --- everything below this line replaces the old
-      # "Package Lambda" / "Deploy Lambda" / "Deploy Step Functions" steps ---
 
       - name: Setup SAM CLI
         uses: aws-actions/setup-sam@v2
