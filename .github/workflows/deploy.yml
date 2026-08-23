@@ -21,7 +21,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::292960609315:role/GitHubActions-ServerlessNotification
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActions-ServerlessNotification
           aws-region: ap-south-1
 
       - name: Package Lambda
@@ -35,8 +35,14 @@ jobs:
             --function-name sendEmail \
             --zip-file fileb://sendEmail.zip
 
+      - name: Set Lambda environment variables
+        run: |
+          aws lambda update-function-configuration \
+            --function-name sendEmail \
+            --environment "Variables={SENDER_EMAIL=${{ secrets.SES_SENDER_EMAIL }},AWS_REGION=ap-south-1}"
+
       - name: Deploy Step Functions
         run: |
           aws stepfunctions update-state-machine \
-            --state-machine-arn arn:aws:states:ap-south-1:292960609315:stateMachine:ServerlessNotificationWorkflow \
+            --state-machine-arn arn:aws:states:ap-south-1:${{ secrets.AWS_ACCOUNT_ID }}:stateMachine:ServerlessNotificationWorkflow \
             --definition file://step-functions/state-machine.json
