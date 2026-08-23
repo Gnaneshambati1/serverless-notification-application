@@ -4,7 +4,7 @@
   "States": {
     "SendEmail": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:ap-south-1:292960609315:function:sendEmail",
+      "Resource": "arn:aws:lambda:ap-south-1:ACCOUNT_ID_PLACEHOLDER:function:sendEmail",
       "Retry": [
         {
           "ErrorEquals": [
@@ -19,9 +19,7 @@
       ],
       "Catch": [
         {
-          "ErrorEquals": [
-            "States.ALL"
-          ],
+          "ErrorEquals": ["States.ALL"],
           "Next": "EmailFailed"
         }
       ],
@@ -36,7 +34,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::sns:publish",
       "Parameters": {
-        "TopicArn": "arn:aws:sns:ap-south-1:292960609315:ServerlessNotificationTopic",
+        "TopicArn": "arn:aws:sns:ap-south-1:ACCOUNT_ID_PLACEHOLDER:ServerlessNotificationTopic",
         "Message": "Serverless notification workflow completed successfully."
       },
       "End": true
