@@ -24,25 +24,18 @@ jobs:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActions-ServerlessNotification
           aws-region: ap-south-1
 
-      - name: Package Lambda
-        run: |
-          cd lambda
-          zip ../sendEmail.zip sendEmail.py
+      # --- everything below this line replaces the old
+      # "Package Lambda" / "Deploy Lambda" / "Deploy Step Functions" steps ---
 
-      - name: Deploy Lambda
-        run: |
-          aws lambda update-function-code \
-            --function-name sendEmail \
-            --zip-file fileb://sendEmail.zip
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
 
-      - name: Set Lambda environment variables
-        run: |
-          aws lambda update-function-configuration \
-            --function-name sendEmail \
-            --environment "Variables={SENDER_EMAIL=${{ secrets.SES_SENDER_EMAIL }},AWS_REGION=ap-south-1}"
+      - name: SAM build
+        run: sam build
 
-      - name: Deploy Step Functions
+      - name: SAM deploy
         run: |
-          aws stepfunctions update-state-machine \
-            --state-machine-arn arn:aws:states:ap-south-1:${{ secrets.AWS_ACCOUNT_ID }}:stateMachine:ServerlessNotificationWorkflow \
-            --definition file://step-functions/state-machine.json
+          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
+            --stack-name serverless-notification-app \
+            --parameter-overrides SenderEmail=${{ secrets.SES_SENDER_EMAIL }} \
+            --capabilities CAPABILITY_IAM
